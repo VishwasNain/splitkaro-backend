@@ -1,28 +1,42 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
 const syncRoutes = require('./routes/sync');
-const otpRoutes = require('./routes/otp');
-const authRoutes = require("./routes/auth");
+const authRoutes = require('./routes/auth');
+// The old phone-OTP route (/api/otp) was removed: it returned the code in the response.
+
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+// Render sits behind a proxy; needed so rate limits see the real client IP.
+app.set('trust proxy', 1);
+
+app.use(helmet());
+app.use(cors({ origin: false })); // the native app doesn't need CORS
+app.use(express.json({ limit: '1mb' }));
 
 app.get('/', (req, res) => {
   res.json({ status: 'ok', service: 'splitkaro-backend' });
 });
 
+// Brute-force / abuse protection for login, OTP and password endpoints.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests. Please try again later.' },
+});
+
 app.use('/api', syncRoutes);
-app.use('/api/otp', otpRoutes);
-app.use("/api/auth", authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 
 const PORT = process.env.PORT || 5000;
 
 connectDB().then(() => {
   app.listen(PORT, () => {
-    console.log(`Splitkaro backend running on http://localhost:${PORT}`);
-    console.log(`Android emulator should reach it at http://10.0.2.2:${PORT}`);
+    console.log(`Splitkaro backend running on port ${PORT}`);
   });
 });

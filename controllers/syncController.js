@@ -4,7 +4,7 @@ const Expense = require('../models/Expense');
 const Settlement = require('../models/Settlement');
 
 // GET /api/sync - hydrates local state from MongoDB, scoped to req.userId
-// (set by the requireUser middleware from the x-user-id header).
+// (set by the requireUser middleware from the verified login token).
 async function getSync(req, res) {
   try {
     const { userId } = req;
@@ -21,7 +21,8 @@ async function getSync(req, res) {
       settlements,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('sync error:', err.message);
+    res.status(500).json({ error: 'Server error' });
   }
 }
 
@@ -37,7 +38,8 @@ async function putUser(req, res) {
     );
     res.json(user);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('sync error:', err.message);
+    res.status(500).json({ error: 'Server error' });
   }
 }
 
@@ -68,7 +70,8 @@ function makeReplaceCollectionHandler(Model, bodyKey) {
       const saved = await Model.find({ ownerId: userId });
       res.json(saved);
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      console.error('sync error:', err.message);
+      res.status(500).json({ error: 'Server error' });
     }
   };
 }

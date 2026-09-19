@@ -1,24 +1,28 @@
 // middleware/requireUser.js
+// Sync routes need to know WHICH account is calling. The app sends the JWT it
+// received at login as:  Authorization: Bearer <token>
+// The server verifies the signature, so a caller can no longer pretend to be
+// someone else just by knowing their email.
 //
-// Sync routes need to know WHICH account is making the request. Since there's
-// no JWT/session system, the app sends the logged-in user's email as a simple
-// header on every sync call: x-user-id.
-//
-// Guests (Skip button, never logged in) send no header at all - these routes
-// then correctly return 401, and the app's existing "server unreachable ->
-// fall back to AsyncStorage-only" logic (in api.js/AppContext.js) kicks in
-// automatically. That's the desired behavior: guests never sync to the cloud,
-// they're local-only until they actually log in.
+// Guests (never logged in) send no token, get 401, and the app keeps working
+// in local-only mode.
+
+const { verifyToken } = require('../utils/token');
 
 function requireUser(req, res, next) {
-  const userId = req.header('x-user-id');
+  const header = req.header('authorization') || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
 
-  if (!userId) {
-    return res.status(401).json({ error: 'Missing x-user-id header - login required to sync' });
+  if (!token) {
+    return res.status(401).json({ error: 'Login required' });
   }
 
-  req.userId = userId.toLowerCase().trim();
-  next();
+  try {
+    req.userId = String(verifyToken(token).sub).toLowerCase().trim();
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
 }
 
 module.exports = requireUser;
