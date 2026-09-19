@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const settlementSchema = new mongoose.Schema(
   {
     _id: { type: String },
+    ownerId: { type: String, required: true, index: true }, // the logged-in user's email
     groupId: String,
     from: String,
     to: String,

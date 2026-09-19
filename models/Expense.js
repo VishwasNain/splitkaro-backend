@@ -12,6 +12,7 @@ const commentSchema = new mongoose.Schema(
 const expenseSchema = new mongoose.Schema(
   {
     _id: { type: String },
+    ownerId: { type: String, required: true, index: true }, // the logged-in user's email
     groupId: String,
     description: String,
     category: String,

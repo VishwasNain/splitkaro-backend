@@ -14,6 +14,7 @@ const memberSchema = new mongoose.Schema(
 const groupSchema = new mongoose.Schema(
   {
     _id: { type: String },
+    ownerId: { type: String, required: true, index: true }, // the logged-in user's email
     name: String,
     category: String,
     icon: String,

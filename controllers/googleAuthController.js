@@ -5,6 +5,7 @@
 // npm install google-auth-library
 
 const { OAuth2Client } = require("google-auth-library");
+const User = require('../models/User');
 
 const GOOGLE_WEB_CLIENT_ID = process.env.GOOGLE_WEB_CLIENT_ID; // the "Web application" client ID
 const client = new OAuth2Client(GOOGLE_WEB_CLIENT_ID);
@@ -31,19 +32,21 @@ exports.googleSignIn = async (req, res) => {
       return res.status(401).json({ success: false, message: "Google account email not verified" });
     }
 
-    // TODO: look up or create the user in your DB by payload.email (or payload.sub),
-    // then issue your app's session/JWT the same way the email-OTP flow does,
-    // so both paths converge on the same "logged in" state.
+    // Same account model as email OTP: email is the id. Find-or-create the
+    // User document (using their Google display name if this is a first login),
+    // then hand it back - the app stores user.id and sends it as x-user-id
+    // on every sync call.
+    const key = payload.email.toLowerCase();
+    const user = await User.findByIdAndUpdate(
+      key,
+      { $setOnInsert: { name: payload.name || 'You' } },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
 
     return res.status(200).json({
       success: true,
       message: "Google sign-in verified",
-      user: {
-        email: payload.email,
-        name: payload.name,
-        picture: payload.picture,
-        googleId: payload.sub,
-      },
+      user,
     });
   } catch (err) {
     console.error("googleSignIn error:", err.message);
