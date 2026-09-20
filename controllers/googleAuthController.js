@@ -1,6 +1,8 @@
 // controllers/googleAuthController.js
 // Verifies the Google ID token sent from the app after @react-native-google-signin/google-signin
 // completes on-device sign-in. No Firebase involved — uses Google's own token-info endpoint.
+//
+// npm install google-auth-library
 
 const { OAuth2Client } = require("google-auth-library");
 const User = require('../models/User');
@@ -32,7 +34,9 @@ exports.googleSignIn = async (req, res) => {
     }
 
     // Same account model as email OTP: email is the id. Find-or-create the
-    // User document (using their Google display name if this is a first login).
+    // User document (using their Google display name if this is a first login),
+    // then hand it back - the app stores user.id and sends it as x-user-id
+    // on every sync call.
     const key = payload.email.toLowerCase();
     const user = await User.findByIdAndUpdate(
       key,

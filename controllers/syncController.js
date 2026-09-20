@@ -4,7 +4,7 @@ const Expense = require('../models/Expense');
 const Settlement = require('../models/Settlement');
 
 // GET /api/sync - hydrates local state from MongoDB, scoped to req.userId
-// (set by the requireUser middleware from the verified login token).
+// (set by the requireUser middleware from the x-user-id header).
 async function getSync(req, res) {
   try {
     const { userId } = req;
@@ -71,7 +71,7 @@ function makeReplaceCollectionHandler(Model, bodyKey) {
       res.json(saved);
     } catch (err) {
       console.error('sync error:', err.message);
-      res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error' });
     }
   };
 }
