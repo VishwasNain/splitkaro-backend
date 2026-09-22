@@ -7,12 +7,14 @@ const {
   putGroups,
   putExpenses,
   putSettlements,
+  deleteExpense,
 } = require('../controllers/syncController');
 
 router.get('/sync', requireUser, getSync);
 router.put('/user', requireUser, putUser);
 router.put('/groups', requireUser, putGroups);
 router.put('/expenses', requireUser, putExpenses);
+router.delete('/expenses/:id', requireUser, deleteExpense);
 router.put('/settlements', requireUser, putSettlements);
 
 module.exports = router;
