@@ -251,6 +251,26 @@ async function deleteExpense(req, res) {
   }
 }
 
+// POST /api/groups/:id/leave - a joined (non-owner) member removes themselves from a
+// shared group. The owner can't leave their own group this way - they delete it instead.
+async function leaveGroup(req, res) {
+  try {
+    const { userId } = req;
+    const group = await Group.findOne({ _id: req.params.id, deletedAt: null });
+    if (!group) return res.json({ ok: true }); // already gone - nothing to leave
+
+    if (group.ownerId === userId) {
+      return res.status(400).json({ error: 'The group owner cannot leave. Delete the group instead.' });
+    }
+
+    await Group.updateOne({ _id: req.params.id }, { $pull: { memberAccounts: userId } });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('sync error:', err.message);
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
 // ---------- settlements (unchanged: still per-user, the app stores settlements as expenses) ----------
 
 async function putSettlements(req, res) {
@@ -272,4 +292,4 @@ async function putSettlements(req, res) {
   }
 }
 
-module.exports = { mergeMembers, cleanMembers, getSync, putUser, putGroups, putExpenses, putSettlements, deleteExpense };
+module.exports = { mergeMembers, cleanMembers, getSync, putUser, putGroups, putExpenses, putSettlements, deleteExpense, leaveGroup };
