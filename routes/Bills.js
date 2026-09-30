@@ -164,6 +164,9 @@ router.get('/bills/:id/file', async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: 'Server error' });
   }
+
+
+  
 });
 
 module.exports = router;
