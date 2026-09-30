@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth');
 const inviteRoutes = require('./routes/invites');
 const joinRoutes = require('./routes/join');
 const chatRoutes = require('./routes/chat');
+const billRoutes = require('./routes/bills');
 // The old phone-OTP route (/api/otp) was removed: it returned the code in the response.
 
 const app = express();
@@ -36,6 +37,7 @@ const authLimiter = rateLimit({
 app.use('/api', syncRoutes);
 app.use('/api', inviteRoutes);
 app.use('/api', chatRoutes);
+app.use('/api', billRoutes);
 app.use(joinRoutes); // public /join/:token page that opens the app
 app.use('/api/auth', authLimiter, authRoutes);
 

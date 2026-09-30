@@ -183,9 +183,12 @@ async function putExpenses(req, res) {
     const ids = incoming.map((e) => e.id);
 
     const groupIds = [...new Set(incoming.map((e) => e.groupId).filter(Boolean))];
-    const [existing, groups] = await Promise.all([
+    const [existing, groups, me] = await Promise.all([
       Expense.find({ _id: { $in: ids } }).select('ownerId groupId'),
-      Group.find({ _id: { $in: groupIds } }).select('ownerId memberAccounts deletedAt'),
+      // 'members' is fetched too so paidByName can be resolved below - it's
+      // only used for that readability field, never for access control.
+      Group.find({ _id: { $in: groupIds } }).select('ownerId memberAccounts deletedAt members'),
+      User.findById(userId).select('name'),
     ]);
     const expById = new Map(existing.map((e) => [e._id, e]));
     const groupById = new Map(groups.map((g) => [g._id, g]));
@@ -195,12 +198,26 @@ async function putExpenses(req, res) {
       return !g.deletedAt && (g.ownerId === userId || g.memberAccounts.includes(userId));
     };
 
+    // Only the author can create or edit an expense (see the update branch below), so
+    // whenever paidBy resolves to 'you' it always means the CURRENT requester - never
+    // someone else. That's what makes this safe to compute once per request instead
+    // of per expense.
+    const myName = (me?.name && me.name !== 'You') ? me.name : userId.split('@')[0];
+    const resolvePaidByName = (storedPaidBy, groupId) => {
+      if (storedPaidBy === 'you') return myName;
+      const g = groupById.get(groupId);
+      const m = g?.members?.find((mm) => mm.id === storedPaidBy);
+      return (m?.name && m.name !== 'You') ? m.name : storedPaidBy;
+    };
+
     const ops = [];
     incoming.forEach((item) => {
       const stored = expById.get(item.id);
+      const storedPaidBy = toStoredId(item.paidBy, userId);
+      const groupIdForName = item.groupId || stored?.groupId;
       const fields = {
         description: item.description, category: item.category, amount: Number(item.amount) || 0,
-        paidBy: toStoredId(item.paidBy, userId), splitType: item.splitType,
+        paidBy: storedPaidBy, paidByName: resolvePaidByName(storedPaidBy, groupIdForName), splitType: item.splitType,
         shares: cleanShares(item.shares, userId), date: item.date,
         comments: Array.isArray(item.comments) ? item.comments : [],
         isSettlement: !!item.isSettlement, createdAt: item.createdAt,

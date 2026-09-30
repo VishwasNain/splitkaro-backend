@@ -1,7 +1,10 @@
 const mongoose = require('mongoose');
 
 async function connectDB() {
-  const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/splitkaro';
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error('MONGODB_URI environment variable is required');
+  }
   try {
     await mongoose.connect(uri);
     // Log the host only - the full URI contains the database password.

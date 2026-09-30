@@ -18,6 +18,11 @@ const expenseSchema = new mongoose.Schema(
     category: String,
     amount: Number,
     paidBy: String,
+    // Human-readable snapshot of who paidBy resolves to, kept only so the raw
+    // document is readable in the database (Compass/Atlas) - the app itself
+    // always resolves names live via paidBy + the group's member list, so
+    // this field is never read by any app logic and is safe to ignore.
+    paidByName: String,
     splitType: String,
     // Plain object of { memberId: shareAmount } - Mixed so it passes through
     // exactly as the client sends it, no Map serialization headaches.

@@ -49,12 +49,12 @@ function groupToClient(doc, requesterId, nameByAcct = {}) {
   const out = {
     ...g,
     isOwner: ownerId === requesterId,
+    ownerId: toClientId(ownerId, ownerId, requesterId), // Include owner's ID in client format
     members: (g.members || []).map((m) => {
       const id = toClientId(m.id, ownerId, requesterId);
       return { id, name: nameByAcct[id] || m.name };
     }),
   };
-  delete out.ownerId;          // never expose account emails to other members
   delete out.memberAccounts;
   delete out.deletedAt;
   return out;
