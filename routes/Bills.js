@@ -163,10 +163,7 @@ router.get('/bills/:id/file', async (req, res) => {
     openFile(bill.attachment.fileId).on('error', () => res.status(404).end()).pipe(res);
   } catch (e) {
     res.status(500).json({ error: 'Server error' });
-  }
-
-
-  
+  }  
 });
 
 module.exports = router;
