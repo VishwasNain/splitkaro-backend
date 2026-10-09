@@ -66,6 +66,8 @@ router.post('/bills', requireUser, (req, res, next) =>
       const existing = await Bill.findById(b.id);
       if (existing) return res.json({ bill: existing });
 
+      if (!req.file) return res.status(400).json({ error: 'A bill image or PDF is required' });
+
       let attachment;
       if (req.file) {
         const mime = sniffMime(req.file.buffer);
