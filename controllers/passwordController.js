@@ -13,7 +13,12 @@ const { signToken } = require('../utils/token');
 
 const BCRYPT_ROUNDS = 10;
 const MIN_PASSWORD_LENGTH = 8;
-const MAX_PASSWORD_BYTES = 72; // bcrypt ignores anything past 72 bytes
+const MAX_PASSWORD_BYTES = 72;
+const STRONG_PASSWORD_RE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+function isStrongPassword(password) {
+  return STRONG_PASSWORD_RE.test(password);
+}
+// bcrypt ignores anything past 72 bytes
 
 // Used to keep response time similar when the email doesn't exist / has no
 // password, so login timing doesn't reveal which emails have accounts.
@@ -63,6 +68,12 @@ exports.setPassword = async (req, res) => {
     }
     if (Buffer.byteLength(password) > MAX_PASSWORD_BYTES) {
       return res.status(400).json({ success: false, message: 'Password is too long (max 72 characters)' });
+    }
+    if (!isStrongPassword(password)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must include an uppercase letter, a lowercase letter, a number, and a symbol',
+      });
     }
     if (!setupTokens.isValid(key, setupToken)) {
       return res.status(401).json({
